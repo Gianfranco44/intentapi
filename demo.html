@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IntentAPI Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Outfit',sans-serif;background:#09090b;color:#fafafa;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem}
+h1{font-size:2rem;font-weight:800;margin-bottom:.5rem;text-align:center}
+h1 span{background:linear-gradient(135deg,#10b981,#34d399,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#a1a1aa;margin-bottom:2rem;text-align:center}
+.terminal{width:100%;max-width:700px;background:#0d0d0f;border:1px solid #3f3f46;border-radius:12px;overflow:hidden;box-shadow:0 25px 80px rgba(0,0,0,.5)}
+.term-bar{display:flex;align-items:center;gap:.5rem;padding:.75rem 1rem;background:#18181b;border-bottom:1px solid #3f3f46}
+.dot{width:12px;height:12px;border-radius:50%}
+.term-bar .title{margin-left:auto;font-size:.75rem;color:#71717a;font-family:'JetBrains Mono',monospace}
+.term-body{padding:1.5rem;font-family:'JetBrains Mono',monospace;font-size:.85rem;line-height:1.8;min-height:380px}
+.line{opacity:0;transform:translateY(8px);animation:fadeIn .4s forwards}
+@keyframes fadeIn{to{opacity:1;transform:translateY(0)}}
+.comment{color:#71717a;font-style:italic}
+.key{color:#10b981}
+.str{color:#34d399}
+.num{color:#f59e0b}
+.status-ok{color:#10b981;font-weight:600}
+.status-fail{color:#ef4444}
+.cursor{display:inline-block;width:8px;height:16px;background:#10b981;animation:blink 1s step-end infinite;vertical-align:middle}
+@keyframes blink{50%{opacity:0}}
+.controls{margin-top:1.5rem;display:flex;gap:1rem;flex-wrap:wrap;justify-content:center}
+.btn{padding:.65rem 1.5rem;border-radius:100px;font-size:.9rem;font-weight:600;border:none;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s}
+.btn-green{background:#10b981;color:#fff}
+.btn-green:hover{background:#059669;transform:translateY(-1px)}
+.btn-outline{background:transparent;color:#a1a1aa;border:1px solid #3f3f46}
+.btn-outline:hover{border-color:#10b981;color:#10b981}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.progress{width:100%;max-width:700px;margin-top:1rem;display:flex;gap:.5rem}
+.progress .step-dot{flex:1;height:3px;border-radius:2px;background:#27272a;transition:background .3s}
+.progress .step-dot.active{background:#10b981}
+.footer{margin-top:2rem;text-align:center;color:#71717a;font-size:.85rem}
+.footer a{color:#10b981;text-decoration:none}
+</style>
+</head>
+<body>
+
+<h1>IntentAPI <span>Demo</span></h1>
+<p class="subtitle">Mira como una frase se convierte en acciones reales</p>
+
+<div class="terminal">
+  <div class="term-bar">
+    <div class="dot" style="background:#ef4444"></div>
+    <div class="dot" style="background:#f59e0b"></div>
+    <div class="dot" style="background:#10b981"></div>
+    <span class="title" id="endpoint">POST /api/v1/intent</span>
+  </div>
+  <div class="term-body" id="output"></div>
+</div>
+
+<div class="progress" id="progress"></div>
+
+<div class="controls">
+  <button class="btn btn-green" id="playBtn" onclick="runDemo()">Ejecutar demo</button>
+  <button class="btn btn-outline" onclick="switchScenario()">Cambiar escenario</button>
+  <a href="https://intentapi.onrender.com/docs" target="_blank" class="btn btn-outline">Probar la API real</a>
+</div>
+
+<div class="footer">
+  <a href="https://intentapi.onrender.com">intentapi.onrender.com</a> — Tu empleado digital. Sin codigo.
+</div>
+
+<script>
+const scenarios = [
+  {
+    title: "E-commerce: confirmar pedido",
+    lines: [
+      {type:'comment', text:'// Tu cliente acaba de comprar. Escribis esto:'},
+      {type:'raw', text:'{'},
+      {type:'kv', key:'intent', value:'"Manda un email a cliente@test.com\\n    confirmando su pedido #1042 y avisale\\n    al equipo de logistica por Slack"'},
+      {type:'raw', text:'}'},
+      {type:'spacer'},
+      {type:'comment', text:'// IntentAPI responde en 0.8 segundos:'},
+      {type:'raw', text:'{'},
+      {type:'kv', key:'status', value:'<span class="status-ok">"completed"</span>'},
+      {type:'kv', key:'confidence', value:'<span class="num">0.94</span>'},
+      {type:'kv', key:'steps', value:'['},
+      {type:'raw', text:'  { <span class="key">connector</span>: <span class="str">"email"</span>, <span class="key">status</span>: <span class="status-ok">"enviado"</span>,'},
+      {type:'raw', text:'    <span class="key">to</span>: <span class="str">"cliente@test.com"</span> },'},
+      {type:'raw', text:'  { <span class="key">connector</span>: <span class="str">"slack"</span>, <span class="key">status</span>: <span class="status-ok">"notificado"</span>,'},
+      {type:'raw', text:'    <span class="key">channel</span>: <span class="str">"#logistica"</span> }'},
+      {type:'raw', text:']'},
+      {type:'kv', key:'costo', value:'<span class="str">"$0.005 USD"</span>'},
+      {type:'kv', key:'duracion', value:'<span class="str">"823ms"</span>'},
+      {type:'raw', text:'}'},
+    ]
+  },
+  {
+    title: "Ventas: nuevo lead",
+    lines: [
+      {type:'comment', text:'// Llega un lead desde tu formulario web:'},
+      {type:'raw', text:'{'},
+      {type:'kv', key:'intent', value:'"Cuando juan@empresa.com complete el\\n    formulario, agregalo al CRM, mandale\\n    un email de bienvenida y asigna un\\n    vendedor del equipo"'},
+      {type:'raw', text:'}'},
+      {type:'spacer'},
+      {type:'comment', text:'// 3 acciones ejecutadas en 1.2 segundos:'},
+      {type:'raw', text:'{'},
+      {type:'kv', key:'status', value:'<span class="status-ok">"completed"</span>'},
+      {type:'kv', key:'pasos', value:'<span class="num">3</span>'},
+      {type:'kv', key:'results', value:'['},
+      {type:'raw', text:'  { <span class="key">step</span>: <span class="num">1</span>, <span class="key">action</span>: <span class="str">"agregar al CRM"</span>, <span class="status-ok">OK</span> },'},
+      {type:'raw', text:'  { <span class="key">step</span>: <span class="num">2</span>, <span class="key">action</span>: <span class="str">"email bienvenida"</span>, <span class="status-ok">OK</span> },'},
+      {type:'raw', text:'  { <span class="key">step</span>: <span class="num">3</span>, <span class="key">action</span>: <span class="str">"asignar vendedor"</span>, <span class="status-ok">OK</span> }'],
+      {type:'raw', text:']'},
+      {type:'kv', key:'costo', value:'<span class="str">"$0.008 USD"</span>'},
+      {type:'raw', text:'}'},
+    ]
+  },
+  {
+    title: "Admin: factura pagada",
+    lines: [
+      {type:'comment', text:'// Se pago una factura en Stripe:'},
+      {type:'raw', text:'{'},
+      {type:'kv', key:'intent', value:'"Registra el pago de la factura #889,\\n    avisale al contador por email y\\n    archiva el comprobante en Google Drive"'},
+      {type:'raw', text:'}'},
+      {type:'spacer'},
+      {type:'comment', text:'// Todo automatico:'},
+      {type:'raw', text:'{'},
+      {type:'kv', key:'status', value:'<span class="status-ok">"completed"</span>'},
+      {type:'kv', key:'confidence', value:'<span class="num">0.91</span>'},
+      {type:'kv', key:'results', value:'['},
+      {type:'raw', text:'  { <span class="key">action</span>: <span class="str">"registrar pago"</span>, <span class="status-ok">OK</span> },'},
+      {type:'raw', text:'  { <span class="key">action</span>: <span class="str">"email contador"</span>, <span class="status-ok">OK</span> },'},
+      {type:'raw', text:'  { <span class="key">action</span>: <span class="str">"archivar en Drive"</span>, <span class="status-ok">OK</span> }'],
+      {type:'raw', text:']'},
+      {type:'kv', key:'costo_total', value:'<span class="str">"$0.006 USD"</span>'},
+      {type:'kv', key:'tiempo', value:'<span class="str">"940ms"</span>'},
+      {type:'raw', text:'}'},
+    ]
+  }
+];
+
+let currentScenario = 0;
+let isPlaying = false;
+
+function buildProgress(){
+  const el = document.getElementById('progress');
+  el.innerHTML = scenarios.map((_,i) => `<div class="step-dot ${i===currentScenario?'active':''}"></div>`).join('');
+}
+
+function switchScenario(){
+  if(isPlaying) return;
+  currentScenario = (currentScenario + 1) % scenarios.length;
+  buildProgress();
+  document.getElementById('output').innerHTML = '<span class="comment">// Escenario: ' + scenarios[currentScenario].title + '</span>\n<span class="comment">// Click "Ejecutar demo" para ver la magia</span>\n<span class="cursor"></span>';
+}
+
+async function runDemo(){
+  if(isPlaying) return;
+  isPlaying = true;
+  const btn = document.getElementById('playBtn');
+  btn.disabled = true;
+  btn.textContent = 'Ejecutando...';
+
+  const output = document.getElementById('output');
+  output.innerHTML = '';
+  const scenario = scenarios[currentScenario];
+
+  for(let i = 0; i < scenario.lines.length; i++){
+    const line = scenario.lines[i];
+    const div = document.createElement('div');
+    div.className = 'line';
+    div.style.animationDelay = '0s';
+
+    if(line.type === 'comment') div.innerHTML = `<span class="comment">${line.text}</span>`;
+    else if(line.type === 'kv') div.innerHTML = `  <span class="key">"${line.key}"</span>: ${line.value},`;
+    else if(line.type === 'spacer') div.innerHTML = '&nbsp;';
+    else div.innerHTML = line.text;
+
+    output.appendChild(div);
+    output.scrollTop = output.scrollHeight;
+    await sleep(line.type === 'spacer' ? 400 : line.type === 'comment' ? 300 : 120);
+  }
+
+  const cursor = document.createElement('div');
+  cursor.className = 'line';
+  cursor.innerHTML = '<span class="cursor"></span>';
+  output.appendChild(cursor);
+
+  isPlaying = false;
+  btn.disabled = false;
+  btn.textContent = 'Ejecutar de nuevo';
+}
+
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+buildProgress();
+document.getElementById('output').innerHTML = '<span class="comment">// Escenario: ' + scenarios[0].title + '</span>\n<span class="comment">// Click "Ejecutar demo" para ver la magia</span>\n<span class="cursor"></span>';
+</script>
+</body>
+</html>
