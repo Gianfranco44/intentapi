@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     # AI
     ANTHROPIC_API_KEY: str = ""
+    OPENAI_API_KEY: str = ""
 
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 60
