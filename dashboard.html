@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IntentAPI — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#09090b;--surface:#18181b;--surface2:#27272a;--border:#3f3f46;--text:#fafafa;--text2:#a1a1aa;--text3:#71717a;--accent:#059669;--accent2:#10b981;--accent-glow:#05966933;--red:#ef4444;--orange:#f59e0b;--blue:#3b82f6;--radius:12px}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+code,pre,.mono{font-family:'JetBrains Mono',monospace}
+.app{display:flex;min-height:100vh}
+/* Sidebar */
+.sidebar{width:260px;background:var(--surface);border-right:1px solid var(--border);padding:1.5rem;display:flex;flex-direction:column;position:fixed;height:100vh;z-index:10}
+.sidebar .logo{font-size:1.3rem;font-weight:800;margin-bottom:2rem;display:flex;align-items:center;gap:.5rem}
+.sidebar .logo span{color:var(--accent2)}
+.sidebar nav{flex:1}
+.sidebar nav a{display:flex;align-items:center;gap:.75rem;padding:.65rem .85rem;border-radius:8px;color:var(--text2);text-decoration:none;font-size:.9rem;font-weight:500;transition:all .15s;margin-bottom:.25rem;cursor:pointer}
+.sidebar nav a:hover,.sidebar nav a.active{background:var(--surface2);color:var(--text)}
+.sidebar nav a.active{border-left:3px solid var(--accent2);color:var(--accent2)}
+.sidebar .user-info{border-top:1px solid var(--border);padding-top:1rem;font-size:.85rem;color:var(--text3)}
+.sidebar .user-info .email{color:var(--text2);font-weight:500}
+.sidebar .user-info .plan{display:inline-block;padding:.15rem .5rem;border-radius:100px;font-size:.7rem;font-weight:700;text-transform:uppercase;background:#10b98120;color:var(--accent2);margin-top:.35rem}
+.sidebar .logout{margin-top:.75rem;background:none;border:1px solid var(--border);color:var(--text3);padding:.4rem .8rem;border-radius:6px;cursor:pointer;font-size:.8rem;font-family:inherit;transition:all .15s}
+.sidebar .logout:hover{border-color:var(--red);color:var(--red)}
+/* Main */
+.main{flex:1;margin-left:260px;padding:2rem 3rem}
+.main h1{font-size:1.8rem;font-weight:800;margin-bottom:.5rem}
+.main .subtitle{color:var(--text2);margin-bottom:2rem;font-size:1rem}
+/* Cards */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem}
+.stat-card .label{font-size:.8rem;color:var(--text3);margin-bottom:.25rem}
+.stat-card .value{font-size:1.8rem;font-weight:700}
+.stat-card .value.green{color:var(--accent2)}
+.stat-card .value.blue{color:var(--blue)}
+.stat-card .value.orange{color:var(--orange)}
+/* Intent Box */
+.intent-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;margin-bottom:2rem}
+.intent-box h2{font-size:1.2rem;font-weight:700;margin-bottom:1rem}
+.intent-textarea{width:100%;min-height:100px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1rem;color:var(--text);font-family:'Outfit',sans-serif;font-size:1rem;resize:vertical;outline:none;transition:border .2s}
+.intent-textarea:focus{border-color:var(--accent2)}
+.intent-textarea::placeholder{color:var(--text3)}
+.intent-controls{display:flex;gap:.75rem;margin-top:1rem;align-items:center;flex-wrap:wrap}
+.btn{padding:.6rem 1.5rem;border-radius:100px;font-size:.9rem;font-weight:600;border:none;cursor:pointer;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:.4rem}
+.btn-primary{background:var(--accent2);color:#fff}
+.btn-primary:hover{background:var(--accent);transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border)}
+.btn-outline:hover{border-color:var(--accent2);color:var(--accent2)}
+.btn-danger{background:transparent;color:var(--red);border:1px solid #ef444433}
+.btn-danger:hover{background:#ef444415}
+.checkbox-label{display:flex;align-items:center;gap:.4rem;font-size:.85rem;color:var(--text2);cursor:pointer;margin-left:auto}
+.checkbox-label input{accent-color:var(--accent2)}
+/* Results */
+.result-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.5rem;animation:fadeIn .3s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.result-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.result-header .status{padding:.3rem .8rem;border-radius:100px;font-size:.75rem;font-weight:700;text-transform:uppercase}
+.status-completed{background:#10b98120;color:var(--accent2)}
+.status-dry_run{background:#3b82f620;color:var(--blue)}
+.status-failed{background:#ef444420;color:var(--red)}
+.status-awaiting_approval{background:#f59e0b20;color:var(--orange)}
+.result-summary{font-size:.95rem;color:var(--text2);margin-bottom:1rem}
+.result-meta{display:flex;gap:1.5rem;font-size:.8rem;color:var(--text3);margin-bottom:1rem;flex-wrap:wrap}
+.steps-list{display:flex;flex-direction:column;gap:.5rem}
+.step-item{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--accent2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0}
+.step-item .connector{font-weight:600;color:var(--accent2);font-size:.85rem}
+.step-item .desc{color:var(--text2);font-size:.85rem}
+.step-item .step-status{margin-left:auto;font-size:.75rem;font-weight:600}
+/* JSON viewer */
+.json-toggle{font-size:.8rem;color:var(--text3);cursor:pointer;text-decoration:underline;margin-top:.5rem;display:inline-block}
+.json-viewer{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-top:.5rem;font-size:.8rem;overflow-x:auto;max-height:300px;overflow-y:auto;display:none}
+.json-viewer.open{display:block}
+/* History */
+.history-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:.75rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:1rem}
+.history-item:hover{border-color:var(--accent2)}
+.history-item .intent-text{flex:1;font-size:.9rem;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-item .time{font-size:.75rem;color:var(--text3);white-space:nowrap}
+/* Auth */
+.auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2.5rem;width:100%;max-width:420px}
+.auth-card h1{font-size:1.5rem;font-weight:800;margin-bottom:.5rem;text-align:center}
+.auth-card h1 span{color:var(--accent2)}
+.auth-card .auth-sub{color:var(--text2);text-align:center;margin-bottom:2rem;font-size:.9rem}
+.form-group{margin-bottom:1.25rem}
+.form-group label{display:block;font-size:.85rem;color:var(--text2);margin-bottom:.4rem;font-weight:500}
+.form-input{width:100%;padding:.7rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.95rem;font-family:inherit;outline:none;transition:border .2s}
+.form-input:focus{border-color:var(--accent2)}
+.auth-card .btn{width:100%;justify-content:center;padding:.75rem;font-size:1rem}
+.auth-toggle{text-align:center;margin-top:1.25rem;font-size:.85rem;color:var(--text3)}
+.auth-toggle a{color:var(--accent2);cursor:pointer;text-decoration:none}
+.auth-toggle a:hover{text-decoration:underline}
+.error-msg{background:#ef444415;border:1px solid #ef444433;color:#fca5a5;padding:.6rem 1rem;border-radius:8px;font-size:.85rem;margin-bottom:1rem;display:none}
+/* Connectors */
+.connectors-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem}
+.connector-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;display:flex;align-items:flex-start;gap:1rem;transition:all .15s}
+.connector-card:hover{border-color:var(--accent2)}
+.connector-icon{font-size:1.5rem}
+.connector-info h3{font-size:1rem;font-weight:600;margin-bottom:.25rem}
+.connector-info p{font-size:.8rem;color:var(--text3)}
+.connector-actions{font-size:.75rem;color:var(--text2);margin-top:.35rem}
+/* Loading */
+.loading{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent2);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Responsive */
+@media(max-width:768px){.sidebar{display:none}.main{margin-left:0;padding:1.5rem}}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen" class="auth-screen">
+  <div class="auth-card">
+    <h1>Intent<span>API</span></h1>
+    <p class="auth-sub">Tu empleado digital. Sin codigo.</p>
+    <div id="authError" class="error-msg"></div>
+    <div id="loginForm">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" class="form-input" id="authEmail" placeholder="tu@email.com">
+      </div>
+      <div class="form-group">
+        <label>Contrasena</label>
+        <input type="password" class="form-input" id="authPassword" placeholder="Min. 8 caracteres">
+      </div>
+      <div class="form-group">
+        <label id="nameLabel">Nombre</label>
+        <input type="text" class="form-input" id="authName" placeholder="Tu nombre">
+      </div>
+      <button class="btn btn-primary" id="authBtn" onclick="handleAuth()">Crear cuenta</button>
+      <div class="auth-toggle">
+        <span id="authToggleText">Ya tenes cuenta?</span> <a id="authToggleLink" onclick="toggleAuthMode()">Iniciar sesion</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="app hidden">
+  <aside class="sidebar">
+    <div class="logo">Intent<span>API</span></div>
+    <nav>
+      <a class="active" onclick="showPage('execute')" id="nav-execute">&#9889; Ejecutar intent</a>
+      <a onclick="showPage('history')" id="nav-history">&#128203; Historial</a>
+      <a onclick="showPage('connectors')" id="nav-connectors">&#128268; Conectores</a>
+      <a onclick="showPage('usage')" id="nav-usage">&#128202; Uso y costos</a>
+    </nav>
+    <div class="user-info">
+      <div class="email" id="userEmail"></div>
+      <div class="plan" id="userPlan">FREE</div>
+      <button class="logout" onclick="logout()">Cerrar sesion</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <!-- EXECUTE PAGE -->
+    <div id="page-execute">
+      <h1>Ejecutar intent</h1>
+      <p class="subtitle">Escribi lo que queres automatizar en espanol. La IA lo entiende y lo ejecuta.</p>
+
+      <div class="stats" id="quickStats">
+        <div class="stat-card"><div class="label">Intents este mes</div><div class="value green" id="statTotal">0</div></div>
+        <div class="stat-card"><div class="label">Exitosos</div><div class="value blue" id="statSuccess">0</div></div>
+        <div class="stat-card"><div class="label">Costo total</div><div class="value orange" id="statCost">$0.00</div></div>
+      </div>
+
+      <div class="intent-box">
+        <h2>Nuevo intent</h2>
+        <textarea class="intent-textarea" id="intentInput" placeholder="Ej: Manda un email a cliente@test.com confirmando su pedido y avisa al equipo por Slack en #ventas"></textarea>
+        <div class="intent-controls">
+          <button class="btn btn-primary" id="executeBtn" onclick="executeIntent(false)">Ejecutar</button>
+          <button class="btn btn-outline" onclick="executeIntent(true)">Prueba sin riesgo</button>
+          <label class="checkbox-label"><input type="checkbox" id="approvalCheck"> Pedir aprobacion</label>
+        </div>
+      </div>
+
+      <div id="resultArea"></div>
+    </div>
+
+    <!-- HISTORY PAGE -->
+    <div id="page-history" class="hidden">
+      <h1>Historial</h1>
+      <p class="subtitle">Tus ejecuciones recientes.</p>
+      <div id="historyList"></div>
+    </div>
+
+    <!-- CONNECTORS PAGE -->
+    <div id="page-connectors" class="hidden">
+      <h1>Conectores</h1>
+      <p class="subtitle">Servicios disponibles para automatizar.</p>
+      <div class="connectors-grid" id="connectorsList"></div>
+    </div>
+
+    <!-- USAGE PAGE -->
+    <div id="page-usage" class="hidden">
+      <h1>Uso y costos</h1>
+      <p class="subtitle">Tu consumo del mes actual.</p>
+      <div class="stats" id="usageStats"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://intentapi.onrender.com';
+let token = localStorage.getItem('intent_token');
+let apiKey = localStorage.getItem('intent_api_key');
+let isRegister = true;
+
+// Init
+if(token && apiKey) showDashboard();
+
+function headers(useApiKey=true){
+  return {
+    'Content-Type':'application/json',
+    'Authorization': 'Bearer '+(useApiKey && apiKey ? apiKey : token)
+  };
+}
+
+async function handleAuth(){
+  const email = document.getElementById('authEmail').value;
+  const password = document.getElementById('authPassword').value;
+  const name = document.getElementById('authName').value;
+  const errEl = document.getElementById('authError');
+  errEl.style.display='none';
+
+  if(!email||!password){errEl.textContent='Completa email y contrasena';errEl.style.display='block';return;}
+
+  const btn = document.getElementById('authBtn');
+  btn.disabled=true;btn.innerHTML='<span class="loading"></span>';
+
+  try{
+    const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+    const body = isRegister ? {email,password,name} : {email,password};
+    const res = await fetch(API+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data = await res.json();
+
+    if(!res.ok){errEl.textContent=data.detail||'Error';errEl.style.display='block';btn.disabled=false;btn.textContent=isRegister?'Crear cuenta':'Iniciar sesion';return;}
+
+    token = data.access_token;
+    localStorage.setItem('intent_token',token);
+    localStorage.setItem('intent_email',data.email);
+    localStorage.setItem('intent_plan',data.plan);
+
+    // Create API key
+    const keyRes = await fetch(API+'/api/auth/api-keys?name=Dashboard',{method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'}});
+    const keyData = await keyRes.json();
+    apiKey = keyData.key;
+    localStorage.setItem('intent_api_key',apiKey);
+
+    showDashboard();
+  }catch(e){errEl.textContent='Error de conexion';errEl.style.display='block';}
+  btn.disabled=false;btn.textContent=isRegister?'Crear cuenta':'Iniciar sesion';
+}
+
+function toggleAuthMode(){
+  isRegister=!isRegister;
+  document.getElementById('authBtn').textContent=isRegister?'Crear cuenta':'Iniciar sesion';
+  document.getElementById('authToggleText').textContent=isRegister?'Ya tenes cuenta?':'No tenes cuenta?';
+  document.getElementById('authToggleLink').textContent=isRegister?'Iniciar sesion':'Crear cuenta';
+  document.getElementById('nameLabel').parentElement.style.display=isRegister?'block':'none';
+  document.getElementById('authError').style.display='none';
+}
+
+function showDashboard(){
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  document.getElementById('userEmail').textContent=localStorage.getItem('intent_email')||'';
+  document.getElementById('userPlan').textContent=(localStorage.getItem('intent_plan')||'free').toUpperCase();
+  loadStats();
+  loadConnectors();
+}
+
+function logout(){
+  localStorage.clear();
+  token=null;apiKey=null;
+  document.getElementById('authScreen').classList.remove('hidden');
+  document.getElementById('dashboard').classList.add('hidden');
+}
+
+function showPage(page){
+  ['execute','history','connectors','usage'].forEach(p=>{
+    document.getElementById('page-'+p).classList.toggle('hidden',p!==page);
+    document.getElementById('nav-'+p).classList.toggle('active',p===page);
+  });
+  if(page==='history') loadHistory();
+  if(page==='usage') loadUsage();
+}
+
+async function executeIntent(dryRun){
+  const intent = document.getElementById('intentInput').value.trim();
+  if(!intent) return;
+
+  const btn = document.getElementById('executeBtn');
+  btn.disabled=true;btn.innerHTML='<span class="loading"></span> Procesando...';
+
+  try{
+    const body = {
+      intent,
+      dry_run: dryRun,
+      require_approval: document.getElementById('approvalCheck').checked
+    };
+    const res = await fetch(API+'/api/v1/intent',{method:'POST',headers:headers(),body:JSON.stringify(body)});
+    const data = await res.json();
+
+    if(!res.ok){
+      showResult({status:'failed',error:data.detail||'Error',intent_raw:intent,steps:[]});
+    } else {
+      showResult(data);
+    }
+    loadStats();
+  }catch(e){
+    showResult({status:'failed',error:'Error de conexion',intent_raw:intent,steps:[]});
+  }
+  btn.disabled=false;btn.innerHTML='Ejecutar';
+}
+
+function showResult(data){
+  const area = document.getElementById('resultArea');
+  const parsed = data.intent_parsed||{};
+  const steps = parsed.steps||[];
+  const results = data.results||[];
+
+  const statusClass = 'status-'+(data.status||'failed');
+  const statusLabel = {completed:'Completado',dry_run:'Prueba',failed:'Fallido',awaiting_approval:'Esperando aprobacion'}[data.status]||data.status;
+
+  let stepsHtml = steps.map((s,i)=>{
+    const r = results[i];
+    const stepStatus = r ? (r.status==='completed'?'&#10004;':'&#10006;') : '&#9679;';
+    const stepColor = r ? (r.status==='completed'?'color:var(--accent2)':'color:var(--red)') : 'color:var(--text3)';
+    return `<div class="step-item">
+      <div class="step-num">${s.step}</div>
+      <div><span class="connector">${s.connector}</span> <span class="desc">${s.description}</span></div>
+      <span class="step-status" style="${stepColor}">${stepStatus}</span>
+    </div>`;
+  }).join('');
+
+  const jsonId = 'json-'+Date.now();
+  const html = `<div class="result-box">
+    <div class="result-header">
+      <span><strong>${data.intent_raw||''}</strong></span>
+      <span class="status ${statusClass}">${statusLabel}</span>
+    </div>
+    ${parsed.summary?`<div class="result-summary">${parsed.summary}</div>`:''}
+    ${data.error?`<div class="result-summary" style="color:var(--red)">${data.error}</div>`:''}
+    <div class="result-meta">
+      ${parsed.confidence?`<span>Confianza: ${Math.round(parsed.confidence*100)}%</span>`:''}
+      ${data.total_duration_ms?`<span>Tiempo: ${data.total_duration_ms}ms</span>`:''}
+      ${data.tokens_used?`<span>Tokens: ${data.tokens_used}</span>`:''}
+      ${data.cost_usd?`<span>Costo: $${data.cost_usd.toFixed(4)}</span>`:''}
+    </div>
+    ${stepsHtml?`<div class="steps-list">${stepsHtml}</div>`:''}
+    <span class="json-toggle" onclick="document.getElementById('${jsonId}').classList.toggle('open')">Ver JSON completo</span>
+    <pre class="json-viewer" id="${jsonId}">${JSON.stringify(data,null,2)}</pre>
+  </div>`;
+
+  area.insertAdjacentHTML('afterbegin',html);
+}
+
+async function loadStats(){
+  try{
+    const res = await fetch(API+'/api/v1/usage',{headers:headers()});
+    const data = await res.json();
+    const d = data.data||{};
+    document.getElementById('statTotal').textContent=d.total_executions||0;
+    document.getElementById('statSuccess').textContent=d.successful_executions||0;
+    document.getElementById('statCost').textContent='$'+(d.total_cost_usd||0).toFixed(4);
+  }catch(e){}
+}
+
+async function loadHistory(){
+  try{
+    const res = await fetch(API+'/api/v1/executions?limit=20',{headers:headers()});
+    const data = await res.json();
+    const list = data.data||[];
+    const el = document.getElementById('historyList');
+    if(!list.length){el.innerHTML='<p style="color:var(--text3)">No hay ejecuciones todavia. Proba ejecutar tu primer intent.</p>';return;}
+    el.innerHTML = list.map(e=>{
+      const statusClass = 'status-'+(e.status||'');
+      const statusLabel = {completed:'OK',dry_run:'Prueba',failed:'Error',awaiting_approval:'Pendiente'}[e.status]||e.status;
+      return `<div class="history-item">
+        <span class="status ${statusClass}">${statusLabel}</span>
+        <span class="intent-text">${e.intent||''}</span>
+        <span class="time">${e.cost_usd?'$'+e.cost_usd.toFixed(4):''} | ${e.execution_time_ms||0}ms</span>
+      </div>`;
+    }).join('');
+  }catch(e){document.getElementById('historyList').innerHTML='<p style="color:var(--red)">Error cargando historial</p>';}
+}
+
+async function loadConnectors(){
+  try{
+    const res = await fetch(API+'/api/v1/connectors/available',{headers:headers()});
+    const data = await res.json();
+    const list = data.data||[];
+    document.getElementById('connectorsList').innerHTML = list.map(c=>`
+      <div class="connector-card">
+        <div class="connector-icon">${c.icon||'&#128268;'}</div>
+        <div class="connector-info">
+          <h3>${c.name}</h3>
+          <p>${c.description}</p>
+          <div class="connector-actions">Acciones: ${c.actions.join(', ')}</div>
+        </div>
+      </div>`).join('');
+  }catch(e){}
+}
+
+async function loadUsage(){
+  try{
+    const res = await fetch(API+'/api/v1/usage',{headers:headers()});
+    const data = await res.json();
+    const d = data.data||{};
+    document.getElementById('usageStats').innerHTML=`
+      <div class="stat-card"><div class="label">Total ejecuciones</div><div class="value green">${d.total_executions||0}</div></div>
+      <div class="stat-card"><div class="label">Exitosas</div><div class="value blue">${d.successful_executions||0}</div></div>
+      <div class="stat-card"><div class="label">Fallidas</div><div class="value" style="color:var(--red)">${d.failed_executions||0}</div></div>
+      <div class="stat-card"><div class="label">Tokens usados</div><div class="value">${d.total_tokens||0}</div></div>
+      <div class="stat-card"><div class="label">Costo total USD</div><div class="value orange">$${(d.total_cost_usd||0).toFixed(4)}</div></div>
+      <div class="stat-card"><div class="label">Periodo</div><div class="value" style="font-size:1.2rem">${d.period||'--'}</div></div>`;
+  }catch(e){}
+}
+
+// Enter key to submit
+document.getElementById('intentInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();executeIntent(false);}});
+document.getElementById('authPassword').addEventListener('keydown',e=>{if(e.key==='Enter')handleAuth();});
+</script>
+</body>
+</html>

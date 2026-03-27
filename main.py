@@ -75,6 +75,11 @@ async def landing_page():
     return LANDING_HTML
 
 
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard_page():
+    return DASHBOARD_HTML
+
+
 @app.get("/api", tags=["System"])
 async def api_root():
     return {
@@ -350,3 +355,8 @@ footer a{color:var(--text2);text-decoration:none}footer a:hover{color:var(--acce
 </footer>
 </body>
 </html>"""
+
+
+# Read dashboard HTML
+with open("dashboard.html", "r") as f:
+    DASHBOARD_HTML = f.read()
